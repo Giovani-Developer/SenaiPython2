@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="page-title">Pedidos</h1>
+
+  <p><a class="btn" href="{{ url_for('form_venda') }}">Registrar nova venda</a></p>
+
+  <table class="table">
+  <thead>
+    <tr><th>ID</th><th>Cliente</th><th>Status</th><th>Total</th><th>Ações</th></tr>
+  </thead>
+  <tbody>
+    {% for p in pedidos %}
+      <tr>
+        <td>{{ p.id }}</td>
+        <td>{{ p.cliente.nome }}</td>
+        <td>{{ p.status }}</td>
+        <td>R$ {{ "%.2f"|format(p.valor_total) }}</td>
+        <td>
+          <form method="post" action="{{ url_for('excluir_pedido', id=p.id) }}" style="display:inline;">
+            <button type="submit" class="btn-outline"
+              onclick="return confirm('Excluir o pedido #{{ p.id }}? Os itens serão removidos.')">
+              Excluir
+            </button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

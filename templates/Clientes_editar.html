@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="page-title">Editar Cliente</h1>
+
+  <form class="form" method="post" action="{{ url_for('editar_cliente', id=cliente.id) }}">
+    <input name="nome" value="{{ cliente.nome }}" placeholder="Nome" required>
+    <input name="email" type="email" value="{{ cliente.email or '' }}" placeholder="Email">
+    <button type="submit" class="btn">Salvar</button>
+    <a class="btn-outline" href="{{ url_for('listar_clientes') }}">Cancelar</a>
+  </form>
+{% endblock %}

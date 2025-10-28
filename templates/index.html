@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="page-title">Aplicativo de Vendas Simples</h1>
+  <p class="lead">Escolha uma opção para navegar pelo sistema:</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Clientes</h3>
+      <p>Listar e cadastrar clientes.</p>
+      <a class="btn" href="{{ url_for('listar_clientes') }}">Ir para Clientes</a>
+    </div>
+
+    <div class="card">
+      <h3>Produtos</h3>
+      <p>Gerenciar e cadastrar produtos da loja.</p>
+      <a class="btn" href="{{ url_for('listar_produtos') }}">Ir para Produtos</a>
+    </div>
+
+    <div class="card">
+      <h3>Nova Venda</h3>
+      <p>Registrar um pedido com itens e baixa de estoque.</p>
+      <a class="btn" href="{{ url_for('form_venda') }}">Criar Venda</a>
+    </div>
+
+    <div class="card">
+      <h3>Pedidos</h3>
+      <p>Ver pedidos realizados e seus totais.</p>
+      <a class="btn" href="{{ url_for('listar_pedidos') }}">Ver Pedidos</a>
+    </div>
+  </div>
+{% endblock %}

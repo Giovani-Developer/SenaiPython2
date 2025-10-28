@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="page-title">Nova Venda</h1>
+
+  <form method="post" action="{{ url_for('criar_venda') }}" onsubmit="prepararItens()" class="form">
+    <label>Cliente</label>
+    <select name="cliente_id" required>
+      <option value="">-- selecione --</option>
+      {% for c in clientes %}
+        <option value="{{ c.id }}">{{ c.nome }}</option>
+      {% endfor %}
+    </select>
+
+    <h3 class="section-title">Itens</h3>
+    <div id="itens">
+      <div class="row item">
+        <select class="produto">
+          {% for p in produtos %}
+            <option value="{{ p.id }}" data-preco="{{ p.preco }}" data-estoque="{{ p.estoque }}">
+              {{ p.nome }} — R$ {{ "%.2f"|format(p.preco) }} — Est: {{ p.estoque }}
+            </option>
+          {% endfor %}
+        </select>
+        <input class="qtd" type="number" min="1" value="1" style="width: 90px;">
+        <button type="button" class="btn-outline" onclick="remover(this)">Remover</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-outline" onclick="adicionar()">Adicionar Item</button>
+      <button type="submit" class="btn">Registrar Venda</button>
+    </div>
+
+    <div id="hidden"></div>
+  </form>
+
+  <h3 class="section-title">Prévia</h3>
+  <table class="table" id="previa">
+    <thead>
+      <tr><th>Produto</th><th>Preço</th><th>Qtd</th><th>Subtotal</th></tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr><td colspan="3" class="total">Total</td><td class="total" id="total">R$ 0,00</td></tr>
+    </tfoot>
+  </table>
+
+<script>
+function adicionar() {
+  const base = document.querySelector(".item");
+  const novo = base.cloneNode(true);
+  novo.querySelector(".qtd").value = 1;
+  document.getElementById("itens").appendChild(novo);
+  atualizarPrevia();
+}
+function remover(btn) {
+  const items = document.querySelectorAll("#itens .item");
+  if (items.length > 1) { btn.parentElement.remove(); atualizarPrevia(); }
+}
+function prepararItens() {
+  const hidden = document.getElementById("hidden");
+  hidden.innerHTML = "";
+  document.querySelectorAll("#itens .item").forEach(div => {
+    const prod = div.querySelector(".produto").value;
+    const qtd = div.querySelector(".qtd").value;
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "itens";
+    input.value = `${prod},${qtd}`;
+    hidden.appendChild(input);
+  });
+}
+function atualizarPrevia() {
+  const tbody = document.querySelector("#previa tbody");
+  tbody.innerHTML = "";
+  let total = 0;
+
+  document.querySelectorAll("#itens .item").forEach(div => {
+    const sel = div.querySelector(".produto");
+    const opt = sel.options[sel.selectedIndex];
+    const nome = opt.text.split(" — ")[0];
+    const preco = parseFloat(opt.getAttribute("data-preco"));
+    const qtd = parseInt(div.querySelector(".qtd").value || "0");
+    const subtotal = (qtd > 0 ? qtd : 0) * preco;
+    total += subtotal;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${nome}</td><td>R$ ${preco.toFixed(2)}</td><td>${qtd}</td><td>R$ ${subtotal.toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("total").innerText = "R$ " + total.toFixed(2);
+}
+document.addEventListener("change", (e) => {
+  if (e.target.classList.contains("produto") || e.target.classList.contains("qtd")) {
+    atualizarPrevia();
+  }
+});
+window.addEventListener("load", atualizarPrevia);
+</script>
+{% endblock %}
+

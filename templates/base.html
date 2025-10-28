@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <title>{{ title or "Módulo 11 — Flask + SQLAlchemy" }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <nav class="navbar">
+  <a class="brand" href="{{ url_for('home') }}">Módulo 11 - C.R.U.D</a>
+  <div class="links">
+    <a href="{{ url_for('listar_clientes') }}">Clientes</a>
+    <a href="{{ url_for('listar_produtos') }}">Produtos</a>
+    <a href="{{ url_for('form_venda') }}">Nova Venda</a>
+    <a href="{{ url_for('listar_pedidos') }}">Pedidos</a>
+  </div>
+</nav>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+        <ul class="flash">
+          {% for cat, msg in messages %}
+            <li class="flash-item {{ cat }}">{{ msg }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    Flask • SQLAlchemy • PostgreSQL
+  </footer>
+</body>
+</html>
