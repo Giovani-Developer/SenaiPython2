@@ -27,5 +27,18 @@
       <p>Ver pedidos realizados e seus totais.</p>
       <a class="btn" href="{{ url_for('listar_pedidos') }}">Ver Pedidos</a>
     </div>
+
+    <div class="card">
+  <h3>Arquivos</h3>
+  <p>Enviar, listar, baixar e excluir arquivos.</p>
+  <a class="btn" href="{{ url_for('listar_arquivos') }}">Ir para Arquivos</a>
+</div>
+
+<div class="card">
+  <h3>Relatórios</h3>
+  <p>Gerar relatórios HTML e baixar CSV. Exportar/Importar XML/JSON.</p>
+  <a class="btn" href="{{ url_for('relatorios_form') }}">Ir para Relatórios</a>
+</div>
+  
   </div>
 {% endblock %}

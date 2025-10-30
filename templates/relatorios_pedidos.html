@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="page-title">Relatório de Pedidos</h1>
+  {% if inicio or fim %}
+    <p class="muted">Período:
+      {% if inicio %}de {{ inicio.strftime("%d/%m/%Y") }}{% endif %}
+      {% if fim %} até {{ fim.strftime("%d/%m/%Y") }}{% endif %}
+    </p>
+  {% endif %}
+
+  <table class="table">
+    <thead>
+      <tr><th>ID</th><th>Cliente</th><th>Status</th><th>Total</th></tr>
+    </thead>
+    <tbody>
+      {% for p in pedidos %}
+        <tr>
+          <td>{{ p.id }}</td>
+          <td>{{ p.cliente.nome }}</td>
+          <td>{{ p.status }}</td>
+          <td>R$ {{ "%.2f"|format(p.valor_total) }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3" class="total">Total Geral</td>
+        <td class="total">R$ {{ "%.2f"|format(total_geral) }}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <p style="margin-top:12px;">
+    <a class="btn" href="{{ url_for('relatorios_form') }}">Voltar</a>
+  </p>
+{% endblock %}
+

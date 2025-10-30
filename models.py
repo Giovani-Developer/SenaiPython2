@@ -3,6 +3,7 @@
 from __future__ import annotations
 from decimal import Decimal
 from app import db
+from datetime import datetime
 
 # Tabela associativa N:N Produto ↔ Fornecedor
 produtos_fornecedores = db.Table(
@@ -90,3 +91,49 @@ class ItemPedido(db.Model):
 
     def __repr__(self) -> str:
         return f"<ItemPedido {self.id} pedido={self.pedido_id} produto={self.produto_id}>"
+    
+
+class Arquivo(db.Model):
+    __tablename__ = "arquivos"
+    id = db.Column(db.Integer, primary_key=True)
+    nome_original = db.Column(db.String(255), nullable=False)
+    nome_armazenado = db.Column(db.String(255), nullable=False, unique=True)
+    caminho = db.Column(db.String(512), nullable=False)
+    mimetype = db.Column(db.String(120))
+    tamanho_bytes = db.Column(db.Integer)
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self) -> str:
+        return f"<Arquivo {self.id} {self.nome_original}>"
+
+
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+
+user_roles = db.Table(
+    "user_roles",
+    db.Column("user_id", db.Integer, db.ForeignKey("users.id"), primary_key=True),
+    db.Column("role_id", db.Integer, db.ForeignKey("roles.id"), primary_key=True),
+)
+
+class Role(db.Model):
+    __tablename__ = "roles"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(40), unique=True, nullable=False)
+
+class User(UserMixin, db.Model):
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    active = db.Column(db.Boolean, default=True)
+    roles = db.relationship("Role", secondary=user_roles, backref="users")
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def has_role(self, role_name: str) -> bool:
+        return any(r.name == role_name for r in self.roles)

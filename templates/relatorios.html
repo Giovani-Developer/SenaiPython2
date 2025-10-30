@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="page-title">Relatórios</h1>
+
+  <h3 class="section-title">Pedidos (HTML)</h3>
+  <form class="form" method="post" action="{{ url_for('relatorio_pedidos_html') }}">
+    <label>Início</label>
+    <input type="date" name="inicio">
+    <label>Fim</label>
+    <input type="date" name="fim">
+    <button type="submit" class="btn">Gerar</button>
+  </form>
+
+  <h3 class="section-title">Exportações CSV</h3>
+  <p>
+    <a class="btn" href="{{ url_for('relatorio_pedidos_csv') }}">Baixar Pedidos (CSV)</a>
+    <a class="btn" href="{{ url_for('relatorio_produtos_csv') }}">Baixar Produtos (CSV)</a>
+    <a class="btn" href="{{ url_for('relatorio_clientes_csv') }}">Baixar Clientes (CSV)</a>
+  </p>
+
+  <h3 class="section-title">Exportar/Importar XML</h3>
+  <p>
+    <a class="btn" href="{{ url_for('exportar_produtos_xml') }}">Exportar Produtos (XML)</a>
+  </p>
+  <form class="form" method="post" action="{{ url_for('importar_produtos_xml') }}" enctype="multipart/form-data">
+    <input type="file" name="arquivo" accept=".xml" required>
+    <button type="submit" class="btn">Importar XML</button>
+  </form>
+
+  <h3 class="section-title">Exportar/Importar JSON</h3>
+  <p>
+    <a class="btn" href="{{ url_for('api_produtos') }}" target="_blank">Ver Produtos (JSON)</a>
+    <a class="btn" href="{{ url_for('api_clientes') }}" target="_blank">Ver Clientes (JSON)</a>
+    <a class="btn" href="{{ url_for('api_pedidos') }}" target="_blank">Ver Pedidos (JSON)</a>
+  </p>
+  <form class="form" method="post" action="{{ url_for('importar_produtos_json') }}" enctype="multipart/form-data">
+    <input type="file" name="arquivo" accept=".json" required>
+    <button type="submit" class="btn">Importar JSON</button>
+  </form>
+{% endblock %}
+

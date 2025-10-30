@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="page-title">Arquivos (Upload)</h1>
+
+  <form class="form" method="post" action="{{ url_for('enviar_arquivos') }}" enctype="multipart/form-data">
+    <input type="file" name="files" multiple required>
+    <button type="submit" class="btn">Enviar</button>
+    <small class="muted">Permitidos: PNG, JPG, GIF, PDF, TXT, CSV, XLSX — até 10MB por envio.</small>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th><th>Nome original</th><th>MIME</th><th>Tamanho</th><th>Enviado em</th><th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in arquivos %}
+        <tr>
+          <td>{{ a.id }}</td>
+          <td title="{{ a.nome_armazenado }}">{{ a.nome_original }}</td>
+          <td>{{ a.mimetype or "-" }}</td>
+          <td>
+            {% set kb = (a.tamanho_bytes or 0) / 1024 %}
+            {{ "%.1f KB"|format(kb) }}
+          </td>
+          <td>{{ a.criado_em.strftime("%d/%m/%Y %H:%M") }}</td>
+          <td>
+            <a class="btn-outline" href="{{ url_for('download_arquivo', id=a.id) }}">Download</a>
+            <form method="post" action="{{ url_for('excluir_arquivo', id=a.id) }}" style="display:inline;">
+              <button type="submit" class="btn-outline"
+                onclick="return confirm('Excluir o arquivo {{ a.nome_original }}?')">Excluir</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
+
