@@ -22,12 +22,32 @@ from models import Cliente, Produto, Categoria, Fornecedor, Pedido, ItemPedido, 
 from flask import request, redirect, url_for, render_template, flash, jsonify, make_response, send_file, abort
 from flask_login import login_required
 from auth import role_required
+from datetime import datetime, timedelta
+from sqlalchemy import func
+from flask_login import login_required, current_user
+import audito
+from auth import role_required
+from models import AuditLog
+
+ 
+
+
+
+
+@app.before_request
+def attach_user_to_session():
+    db.session.info["user_id"] = current_user.id if getattr(current_user, "is_authenticated", False) else None
+    db.session.info["ip"] = request.headers.get("X-Forwarded-For", request.remote_addr)
 
 # >>> MENU PRINCIPAL <<<
 @app.route("/", methods=["GET"])
 @login_required
 def home():
-    return render_template("index.html")
+    try:
+        if current_user.is_authenticated:
+            return redirect(url_for("dashboard"))
+    except ValueError:
+        return render_template("index.html")
 
 # ----------------------------
 # Clientes - GET - POST - UPDATE
@@ -38,6 +58,7 @@ def home():
 def listar_clientes():
     clientes = Cliente.query.order_by(Cliente.id.desc()).all()
     return render_template("clientes.html", clientes=clientes)
+
 
 @app.route("/clientes", methods=["POST"])
 @role_required("admin", "operador")
@@ -356,6 +377,86 @@ def relatorio_clientes_csv():
     return resp
 
 
+def _dt_range_from_query():
+    """
+    Aceita ?inicio=YYYY-MM-DD&fim=YYYY-MM-DD (ou DD/MM/YYYY).
+    Fallback: últimos 7 dias.
+    """
+    def parse_date(s):
+        if not s:
+            return None
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+            try:
+                return datetime.strptime(s, fmt)
+            except ValueError:
+                pass
+        return None
+
+    inicio = parse_date(request.args.get("inicio"))
+    fim = parse_date(request.args.get("fim"))
+    if not inicio and not fim:
+        fim = datetime.utcnow()
+        inicio = fim - timedelta(days=6)
+    if inicio and not fim:
+        fim = datetime.utcnow()
+    if fim:
+        fim = fim.replace(hour=23, minute=59, second=59, microsecond=999999)
+    return inicio, fim
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    inicio, fim = _dt_range_from_query()
+
+    # Totais básicos
+    total_clientes = db.session.query(func.count(Cliente.id)).scalar() or 0
+    total_produtos = db.session.query(func.count(Produto.id)).scalar() or 0
+    estoque_total = db.session.query(func.coalesce(func.sum(Produto.estoque), 0)).scalar() or 0
+
+    # Pedidos no período
+    q_pedidos = Pedido.query
+    if inicio:
+        q_pedidos = q_pedidos.filter(Pedido.data_criacao >= inicio)
+    if fim:
+        q_pedidos = q_pedidos.filter(Pedido.data_criacao <= fim)
+
+    pedidos_periodo = q_pedidos.count()
+    faturamento_periodo = db.session.query(
+        func.coalesce(func.sum(Pedido.valor_total), 0)
+    ).filter(
+        (Pedido.data_criacao >= inicio) if inicio else True,
+        (Pedido.data_criacao <= fim) if fim else True
+    ).scalar()
+
+    # Últimos pedidos (independente do filtro, para visão rápida)
+    ultimos = Pedido.query.order_by(Pedido.data_criacao.desc()).limit(8).all()
+
+    # Top categorias por faturamento no período (opcional, aparece se houver dados)
+    top_cat = db.session.query(
+        Categoria.nome.label("categoria"),
+        func.coalesce(func.sum(ItemPedido.quantidade * ItemPedido.preco_unitario), 0).label("total")
+    ).join(Produto, Produto.categoria_id == Categoria.id
+    ).join(ItemPedido, ItemPedido.produto_id == Produto.id
+    ).join(Pedido, Pedido.id == ItemPedido.pedido_id
+    ).filter(
+        (Pedido.data_criacao >= inicio) if inicio else True,
+        (Pedido.data_criacao <= fim) if fim else True
+    ).group_by(Categoria.nome
+    ).order_by(func.sum(ItemPedido.quantidade * ItemPedido.preco_unitario).desc()
+    ).limit(5).all()
+
+    return render_template(
+        "dashboard.html",
+        inicio=inicio, fim=fim,
+        total_clientes=total_clientes,
+        total_produtos=total_produtos,
+        estoque_total=estoque_total,
+        pedidos_periodo=pedidos_periodo,
+        faturamento_periodo=float(faturamento_periodo or 0),
+        ultimos=ultimos,
+        top_cat=top_cat,
+    )
+
 # ===========================
 # 11.5 — XML (exportar/importar)
 # ===========================
@@ -557,14 +658,14 @@ def listar_pedidos():
 
 
 @app.route("/vendas/nova", methods=["GET"])
-@login_required 
+@role_required("admin", "operador")
 def form_venda():
     clientes = Cliente.query.order_by(Cliente.nome.asc()).all()
     produtos = Produto.query.order_by(Produto.nome.asc()).all()
     return render_template("vendas_nova.html", clientes=clientes, produtos=produtos)
 
 @app.route("/vendas/nova", methods=["POST"])
-@login_required 
+@role_required("admin", "operador")
 def criar_venda():
     """
     Espera:
@@ -635,7 +736,7 @@ def criar_venda():
 
     
 @app.route("/clientes/excluir/<int:id>", methods=["POST"])
-@login_required 
+@role_required("admin", "operador")
 def excluir_cliente(id):
     cliente = Cliente.query.get_or_404(id)
     # bloqueia se cliente tiver pedidos
@@ -653,7 +754,7 @@ def excluir_cliente(id):
     return redirect(url_for("listar_clientes"))
 
 @app.route("/produtos/excluir/<int:id>", methods=["POST"])
-@login_required 
+@role_required("admin", "operador")
 def excluir_produto(id):
     produto = Produto.query.get_or_404(id)
     # bloqueia se produto estiver em itens de pedido
@@ -671,7 +772,7 @@ def excluir_produto(id):
     return redirect(url_for("listar_produtos"))
 
 @app.route("/pedidos/excluir/<int:id>", methods=["POST"])
-@login_required 
+@role_required("admin", "operador")
 def excluir_pedido(id):
     pedido = Pedido.query.get_or_404(id)
     try:
@@ -682,6 +783,27 @@ def excluir_pedido(id):
         db.session.rollback()
         flash(f"Erro ao excluir pedido: {e}", "error")
     return redirect(url_for("listar_pedidos"))
+
+
+@app.route("/auditoria")
+@role_required("admin")
+def auditoria_list():
+    # filtros simples por querystring
+    entidade = request.args.get("entidade")
+    usuario = request.args.get("usuario", type=int)
+    pagina = request.args.get("page", 1, type=int)
+    por_pagina = 20
+
+    q = AuditLog.query.order_by(AuditLog.created_at.desc())
+    if entidade:
+        q = q.filter(AuditLog.entity == entidade)
+    if usuario is not None:
+        q = q.filter(AuditLog.user_id == usuario)
+
+    pag = q.paginate(page=pagina, per_page=por_pagina, error_out=False)
+    return render_template("auditoria.html", pag=pag, registros=pag.items,
+                           entidade=entidade, usuario=usuario)
+						   
 
 
 if __name__ == "__main__":

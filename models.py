@@ -3,7 +3,12 @@
 from __future__ import annotations
 from decimal import Decimal
 from app import db
-from datetime import datetime
+from datetime import datetime, timezone
+from sqlalchemy import func
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import func
 
 # Tabela associativa N:N Produto ↔ Fornecedor
 produtos_fornecedores = db.Table(
@@ -59,22 +64,26 @@ class Fornecedor(db.Model):
     def __repr__(self) -> str:
         return f"<Fornecedor {self.id} {self.nome}>"
 
+from datetime import datetime, timezone
+from sqlalchemy import func
+
+
 class Pedido(db.Model):
     __tablename__ = "pedidos"
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id"), nullable=False)
     valor_total = db.Column(db.Numeric(10, 2), default=0)
     status = db.Column(db.String(20), default="aberto")
-
-    itens = db.relationship(
-        "ItemPedido",
-        backref="pedido",
-        lazy=True,
-        cascade="all, delete-orphan"
+    # timezone-aware + default no servidor (Postgres)
+    data_criacao = db.Column(
+        db.DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True
     )
 
-    def __repr__(self) -> str:
-        return f"<Pedido {self.id} cliente={self.cliente_id} total={self.valor_total}>"
+    itens = db.relationship("ItemPedido", backref="pedido", lazy=True, cascade="all, delete-orphan")
+
 
 class ItemPedido(db.Model):
     __tablename__ = "itens_pedido"
@@ -107,8 +116,6 @@ class Arquivo(db.Model):
         return f"<Arquivo {self.id} {self.nome_original}>"
 
 
-from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
 
 user_roles = db.Table(
     "user_roles",
@@ -137,3 +144,15 @@ class User(UserMixin, db.Model):
 
     def has_role(self, role_name: str) -> bool:
         return any(r.name == role_name for r in self.roles)
+    
+class AuditLog(db.Model):
+    __tablename__ = "audit_logs"
+    id = db.Column(db.Integer, primary_key=True)
+    action = db.Column(db.String(10), nullable=False)            # INSERT | UPDATE | DELETE
+    entity = db.Column(db.String(80), nullable=False)            # ex.: "Cliente"
+    entity_pk = db.Column(db.String(120), nullable=False)        # id do registro como string
+    user_id = db.Column(db.Integer, nullable=True)               # quem fez (se logado)
+    ip = db.Column(db.String(64), nullable=True)                 # IP de origem
+    created_at = db.Column(db.DateTime(timezone=True),
+                           server_default=func.now(), index=True, nullable=False)
+    changes = db.Column(JSONB, nullable=True)                    # snapshot/mudanças (JSON)

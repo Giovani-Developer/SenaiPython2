@@ -14,7 +14,9 @@
       {% endfor %}
     </select>
 
+    {% if current_user.has_role('admin') or current_user.has_role('operador') %}
     <button type="submit" class="btn">Cadastrar</button>
+    {% endif %}
   </form>
 
   <table class="table">

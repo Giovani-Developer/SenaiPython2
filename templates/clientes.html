@@ -5,7 +5,9 @@
   <form class="form" method="post" action="{{ url_for('cadastrar_cliente') }}">
     <input name="nome" placeholder="Nome" required>
     <input name="email" type="email" placeholder="Email">
+    {% if current_user.has_role('admin') or current_user.has_role('operador') %}
     <button type="submit" class="btn">Cadastrar</button>
+    {% endif %}
   </form>
 
   <table class="table">
@@ -20,10 +22,14 @@
       <td>{{ c.email or "-" }}</td>
       <td>{{ "Sim" if c.ativo else "Não" }}</td>
       <td>
-        <a class="btn-outline" href="{{ url_for('form_editar_cliente', id=c.id) }}">Editar</a>
+        {% if current_user.has_role('admin') or current_user.has_role('operador') %}
+        <a class="btn-outline"  href="{{ url_for('form_editar_cliente', id=c.id) }}">Editar</a>
+          {% endif %}
         <form method="post" action="{{ url_for('excluir_cliente', id=c.id) }}" style="display:inline;">
+          {% if current_user.has_role('admin') or current_user.has_role('operador') %}
           <button type="submit" class="btn-outline"
             onclick="return confirm('Excluir o cliente {{ c.nome }}?')">Excluir</button>
+          {% endif %}
         </form>
       </td>
     </tr>

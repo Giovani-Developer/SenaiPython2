@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="page-title">Auditoria</h1>
+
+  <form class="form" method="get" action="{{ url_for('auditoria_list') }}">
+    <input name="entidade" placeholder="Entidade (ex.: Produto)" value="{{ entidade or '' }}">
+    <input name="usuario" type="number" placeholder="User ID" value="{{ usuario if usuario is not none }}">
+    <button class="btn" type="submit">Filtrar</button>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr><th>Data/Hora</th><th>Ação</th><th>Entidade</th><th>PK</th><th>User</th><th>IP</th><th>Detalhes</th></tr>
+    </thead>
+    <tbody>
+      {% for r in registros %}
+        <tr>
+          <td>{{ r.created_at.strftime("%d/%m/%Y %H:%M:%S") }}</td>
+          <td>{{ r.action }}</td>
+          <td>{{ r.entity }}</td>
+          <td>{{ r.entity_pk }}</td>
+          <td>{{ r.user_id or "-" }}</td>
+          <td>{{ r.ip or "-" }}</td>
+          <td>
+            <pre style="white-space:pre-wrap;max-width:620px;">{{ r.changes | tojson(indent=2) }}</pre>
+          </td>
+        </tr>
+      {% endfor %}
+      {% if not registros %}
+        <tr><td colspan="7">Nenhum registro.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div class="pager">
+    {% if pag.has_prev %}
+      <a class="btn-outline" href="{{ url_for('auditoria_list', page=pag.prev_num, entidade=entidade, usuario=usuario) }}">&laquo; Anterior</a>
+    {% endif %}
+    <span>Página {{ pag.page }} de {{ pag.pages }}</span>
+    {% if pag.has_next %}
+      <a class="btn-outline" href="{{ url_for('auditoria_list', page=pag.next_num, entidade=entidade, usuario=usuario) }}">Próxima &raquo;</a>
+    {% endif %}
+  </div>
+{% endblock %}
+

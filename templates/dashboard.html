@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 class="page-title">Dashboard</h1>
+
+  <form class="form" method="get" action="{{ url_for('dashboard') }}" style="margin-bottom:12px;">
+    <label>Início</label>
+    <input type="date" name="inicio" value="{{ inicio.strftime('%Y-%m-%d') if inicio }}">
+    <label>Fim</label>
+    <input type="date" name="fim" value="{{ fim.strftime('%Y-%m-%d') if fim }}">
+    <button class="btn" type="submit">Aplicar</button>
+    <a class="btn-outline" href="{{ url_for('dashboard') }}">Últimos 7 dias</a>
+  </form>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Total de Clientes</h3>
+      <p class="lead" style="font-size:1.6rem; font-weight:700;">{{ total_clientes }}</p>
+      <p class="muted">Clientes cadastrados</p>
+    </div>
+    <div class="card">
+      <h3>Total de Produtos</h3>
+      <p class="lead" style="font-size:1.6rem; font-weight:700;">{{ total_produtos }}</p>
+      <p class="muted">Itens diferentes no catálogo</p>
+    </div>
+    <div class="card">
+      <h3>Estoque Total</h3>
+      <p class="lead" style="font-size:1.6rem; font-weight:700;">{{ estoque_total }}</p>
+      <p class="muted">Soma das quantidades</p>
+    </div>
+    <div class="card">
+      <h3>Pedidos no Período</h3>
+      <p class="lead" style="font-size:1.6rem; font-weight:700;">{{ pedidos_periodo }}</p>
+      <p class="muted">
+        {% if inicio %}de {{ inicio.strftime("%d/%m/%Y") }}{% endif %}
+        {% if fim %} a {{ fim.strftime("%d/%m/%Y") }}{% endif %}
+      </p>
+    </div>
+    <div class="card">
+      <h3>Faturamento no Período</h3>
+      <p class="lead" style="font-size:1.6rem; font-weight:700;">R$ {{ "%.2f"|format(faturamento_periodo) }}</p>
+      <p class="muted">Soma de valor_total</p>
+    </div>
+    {% if top_cat and top_cat|length > 0 %}
+    <div class="card">
+      <h3>Top Categorias (R$)</h3>
+      <table class="table" style="margin-top:8px;">
+        <thead><tr><th>Categoria</th><th>Total</th></tr></thead>
+        <tbody>
+          {% for row in top_cat %}
+            <tr>
+              <td>{{ row.categoria or "-" }}</td>
+              <td>R$ {{ "%.2f"|format(row.total or 0) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+
+  <h3 class="section-title" style="margin-top:16px;">Últimos pedidos</h3>
+  <table class="table">
+    <thead>
+      <tr><th>#</th><th>Cliente</th><th>Status</th><th>Total</th><th>Data</th></tr>
+    </thead>
+    <tbody>
+      {% for p in ultimos %}
+        <tr>
+          <td>{{ p.id }}</td>
+          <td>{{ p.cliente.nome if p.cliente else "-" }}</td>
+          <td>{{ p.status }}</td>
+          <td>R$ {{ "%.2f"|format(p.valor_total or 0) }}</td>
+          <td>{{ p.data_criacao.strftime("%d/%m/%Y %H:%M") }}</td>
+        </tr>
+      {% endfor %}
+      {% if not ultimos %}
+        <tr><td colspan="5">Sem pedidos ainda.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+{% endblock %}

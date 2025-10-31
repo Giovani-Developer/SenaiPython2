@@ -17,10 +17,12 @@
         <td>R$ {{ "%.2f"|format(p.valor_total) }}</td>
         <td>
           <form method="post" action="{{ url_for('excluir_pedido', id=p.id) }}" style="display:inline;">
+            {% if current_user.has_role('admin') or current_user.has_role('operador') %}
             <button type="submit" class="btn-outline"
               onclick="return confirm('Excluir o pedido #{{ p.id }}? Os itens serão removidos.')">
               Excluir
             </button>
+            { % endif %}
           </form>
         </td>
       </tr>
